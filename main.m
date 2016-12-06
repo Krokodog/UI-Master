@@ -20,8 +20,6 @@ GUI=1;
 %configuration
 %PSO variables GUI
 if(GUI==1)
-    psoSwarmSize = evalin('base', 'psoSwarmSize');
-    cfg.iterations = psoSwarmSize;
     
     iw1 = evalin('base', 'iw1');
     cfg.inertiaep =iw1;
@@ -60,8 +58,8 @@ y=grid.yMin:grid.epsylon:grid.yMax;
 
 % Change the coordinates of the objective function, should be between
 % mingrid and maxgrid
-uT=13;
-vT=-13;
+uT=-10;
+vT=13;
 
 % Sphere Function
 of=(x-uT).^2 + ( y-vT).^2;
@@ -87,7 +85,9 @@ end
 
 
 gBests=zeros(iterations,1);
+ngBests=zeros(iterations,1);
 cRate=zeros(iterations,1);
+ncRate=zeros(iterations,1);
 pArea=zeros(iterations,1);
 its=(1:iterations).';
 
@@ -118,7 +118,8 @@ cfg.swarm(:, 5)=0;
 % initial velocity v
 cfg.swarm(:, 6)=0;
 cfg.swarm(:, 7)=1000000;
-cfg.swarmV = cfg.swarm;
+vcfg=cfg;
+vcfg.swarmV = cfg.swarm;
 %------------------------------------------------------------------
 
 %PARALLEL
@@ -139,39 +140,60 @@ for i=1:iterations
             c=createVectorMap(cfgvMap,grid,vFieldx,vFieldy,vMap);
         end
         if(labindex==2)
-            c=velPSO(cfg,grid,vFieldx,vFieldy,uT,vT,iter);
+            c=velPSO(vcfg,grid,vFieldx,vFieldy,uT,vT,iter);
         end
-        
+        if(labindex==3)
+            c=nPSO(cfg,grid,vFieldx,vFieldy,uT,vT,iter);
+        end
     end
     cfgvMap=c{1};
-    cfg=c{2};
+    vcfg=c{2};
+    cfg=c{3};
    
+    %wqe=vcfg.swarmV
     cla(handles.axes1,'reset');
     cla(handles.axes5,'reset');
    
-    % vPSO visualization
-    quiverPlot=quiver(x,y,vFieldx,vFieldy);
-    set(quiverPlot,'Parent', handles.axes1)
-    swarmVPlot=plot(cfg.swarmV(:,1),cfg.swarmV(:,2),'ro');
-    set(swarmVPlot,'Parent', handles.axes1)
-    %                 c=contour(x,y,of,10);
-    %                 set(c,'Parent', handles.axes1)
-    xlabel(handles.axes1,'x-Values')
-    ylabel(handles.axes1,'y-Values')   
     
-    % explored area by the explorer swarm
     a=cfgvMap.vMapx(:,:,1);
     b=cfgvMap.vMapy(:,:,1);
     a=a.^2;
     b=b.^2;
-    addxy=sqrt(a+b);
+    addxy=(a+b)/2;
     myColorMap = jet;
     myColorMap(1, :) = [1 1 1];
     caxis([0 1])
     colormap(myColorMap)
-    imagesc( flipud(addxy),'Parent',handles.axes5)
-    xlabel(handles.axes5,'x-Pixel')
-    ylabel(handles.axes5,'y-Pixel')
+    imagesc([grid.xMin grid.xMax], [grid.yMin grid.yMax], addxy,'Parent',handles.axes1)
+    hold on
+    % vPSO visualization
+    quiverPlot=quiver(x,y,vFieldx,vFieldy,'color',[1 0 1]);
+    set(quiverPlot,'Parent', handles.axes1)
+    swarmVPlot=plot(vcfg.swarmV(:,1),vcfg.swarmV(:,2),'ro');
+    set(swarmVPlot,'Parent', handles.axes1)
+    colorbar(handles.axes1)
+    set(handles.axes1, 'YDir', 'normal')
+    hold off
+    xlabel(handles.axes1,'x-Values')
+    ylabel(handles.axes1,'y-Values')   
+    
+    % nPSO
+    myColorMap2 = gray;
+    myColorMap2(1, :) = [1 1 1];
+    caxis([0 1])
+    colormap(handles.axes5,myColorMap2)
+    baba=nan(size(addxy,1));
+    imagesc([grid.xMin grid.xMax], [grid.yMin grid.yMax], baba,'Parent',handles.axes5)
+    hold on
+    quiverPlot=quiver(x,y,vFieldx,vFieldy,'color',[1 0 1]);
+    set(quiverPlot,'Parent', handles.axes5)
+    swarmPlot=plot(cfg.swarm(:,1),cfg.swarm(:,2),'ro');
+    set(swarmPlot,'Parent', handles.axes5) 
+    colorbar(handles.axes5)
+    set(handles.axes5, 'YDir', 'normal')
+    xlabel(handles.axes5,'x-Values')
+    ylabel(handles.axes5,'y-Values')   
+    
     
     %                 % movement of the explorer swarm
     %                 p2=plot(cfgvMap.searchSwarm(:,1),cfgvMap.searchSwarm(:,2),'ro');
@@ -182,29 +204,42 @@ for i=1:iterations
     %                 set(q2,'Parent', handles.axes2)
     
     % global best per iteration
-    gBests(i,1)=cfg.gBestPerI;
+    gBests(i,1)=vcfg.gBestPerI;
+    ngBests(i,1)=cfg.ngBestPerI;
     hold on
     gBestPlot=plot(1:i,gBests(1:i),'b.');
+    ngBestPlot=plot(1:i,ngBests(1:i),'r.');
     set(gBestPlot,'Parent', handles.axes4)
+    set(ngBestPlot,'Parent', handles.axes4)
     hold off
     xlabel(handles.axes4,'Iteration')
     ylabel(handles.axes4,'Best found solution')
 
     %convergence rate
     sigmasq = 0;
-    N=cfg.swarmSize;
-    favg=sum(cfg.swarmV(:,7))/N;
-    
+    sigmasq2 = 0;
+    N=vcfg.swarmSize;
+    favg=sum(vcfg.swarmV(:,7))/N;
+    N2=cfg.swarmSize;
+    favg2=sum(cfg.swarm(:,7))/N2;
     for iparticle= 1:N
-        fi = cfg.swarmV(iparticle,7);
+        fi = vcfg.swarmV(iparticle,7);
         fitness =max(1,max(abs(fi-favg)));
         sigmsq = sigmasq + ( (fi-favg)/fitness)^2;
+        
+        fi2 = cfg.swarm(iparticle,7);
+        fitness2 =max(1,max(abs(fi2-favg2)));
+        sigmsq2 = sigmasq2 + ( (fi2-favg2)/fitness2)^2;
     end
     sigmsq=sigmsq/N;
+    sigmsq2=sigmsq2/N2;
     cRate(i)=sigmsq;
+    ncRate(i)=sigmsq2;
     hold on
     convergencePlot=plot(i,sigmsq,'b.');
+    nconvergencePlot=plot(i,sigmsq2,'r.');
     set(convergencePlot,'Parent', handles.axes3)
+    set(nconvergencePlot,'Parent', handles.axes3)
     hold off
     
     xlabel(handles.axes3,'Iteration')
@@ -226,9 +261,14 @@ for i=1:iterations
     pause(0.1);
     
 end
+hold on
+set(plot(1:iterations,ncRate(1:iterations),'r'),'Parent', handles.axes3)
 set(plot(1:iterations,cRate(1:iterations),'k'),'Parent', handles.axes3)
 set(plot(1:iterations,pArea(1:iterations),'k'),'Parent', handles.axes2)
+
 set(plot(1:iterations,gBests(1:iterations),'k'),'Parent', handles.axes4)
+set(plot(1:iterations,ngBests(1:iterations),'r'),'Parent', handles.axes4)
+hold off
 xlabel(handles.axes4,'Iteration')
 ylabel(handles.axes4,'Best found solution')
 

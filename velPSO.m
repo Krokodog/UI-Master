@@ -2,18 +2,17 @@ function [cfg] = velPSO(cfg,grid,vFieldx,vFieldy, uT, vT ,iter)
 %VELPSO Particle swarm optimazation considering the vector field
 vMap = labReceive(1);
 
-setCorrection=1;
-
 vMax=2;
 for i= 1:cfg.swarmSize
     
     % x(t+1)=v(t+1)+x(t)
     % with correction
-    if((setCorrection==1) && cfg.swarmV(i,1)>=grid.xMin &&cfg.swarmV(i,1)<=grid.xMax &&cfg.swarmV(i,2)>=grid.yMin &&cfg.swarmV(i,2)<=grid.yMax)
+    if(cfg.swarmV(i,1)>=grid.xMin &&cfg.swarmV(i,1)<=grid.xMax &&cfg.swarmV(i,2)>=grid.yMin &&cfg.swarmV(i,2)<=grid.yMax)
         xCor=vMap(round(cfg.swarmV(i,2)+abs(grid.yMin)+1),round(cfg.swarmV(i,1)+abs(grid.xMin)+1),1);
         yCor=vMap(round(cfg.swarmV(i,2)+abs(grid.yMin)+1),round(cfg.swarmV(i,1)+abs(grid.xMin)+1),2);
         cfg.swarmV(i,5)= cfg.swarmV(i,5) -xCor;
         cfg.swarmV(i,6)= cfg.swarmV(i,6) -yCor;
+       
     else
         xCor=0;
         yCor=0;
@@ -26,7 +25,7 @@ for i= 1:cfg.swarmSize
     elseif((cfg.swarmV(i,1)+cfg.swarmV(i,5))>grid.xMax)
         cfg.swarmV(i,1)=cfg.swarmV(i,1)-cfg.swarmV(i,5);
     else
-        cfg.swarmV(i,1) = cfg.swarmV(i,1)+cfg.swarmV(i,5)+xCor;
+        cfg.swarmV(i,1) = cfg.swarmV(i,1)+cfg.swarmV(i,5)-xCor;
     end
     
     if((cfg.swarmV(i,2)+cfg.swarmV(i,6))<grid.yMin)
@@ -34,7 +33,7 @@ for i= 1:cfg.swarmSize
     elseif((cfg.swarmV(i,2)+cfg.swarmV(i,6))>grid.yMax)
         cfg.swarmV(i,2) = cfg.swarmV(i,2)-cfg.swarmV(i,6);
     else
-        cfg.swarmV(i,2) = cfg.swarmV(i,2)+cfg.swarmV(i,6)+yCor;
+        cfg.swarmV(i,2) = cfg.swarmV(i,2)+cfg.swarmV(i,6)-yCor;
     end
     uVelo = cfg.swarmV(i,1);
     vVelo = cfg.swarmV(i,2);
