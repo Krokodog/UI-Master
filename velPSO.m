@@ -1,4 +1,4 @@
-function [cfg] = velPSO(cfg,grid,vFieldx,vFieldy, uT, vT ,iter)
+function [cfg] = velPSO(cfg,grid,vFieldx,vFieldy, uT, vT ,iter,ofval)
 %VELPSO Particle swarm optimazation considering the vector field
 vMap = labReceive(1);
 
@@ -39,7 +39,17 @@ for i= 1:cfg.swarmSize
     vVelo = cfg.swarmV(i,2);
     
     % Objective function
-    valueVelo = (uVelo-uT)^2 + ( vVelo-vT)^2;
+        if(ofval==1)
+            valueVelo = (uVelo-uT)^2 + ( vVelo-vT)^2;
+        end
+        if(ofval==2)
+            %aRos=1;bRos=100;
+            valueVelo=1*(1-uVelo)^2 + 100*(vVelo-uVelo^2)^2;
+        end
+        if(ofval==3)
+            %aAckley=20;bAckley=0.2;c=2*pi;
+            valueVelo=-20*exp(-0.2*sqrt(uVelo^2+vVelo^2))-exp(1/2*(cos(2*pi*uVelo)+cos(2*pi*vVelo)))+20*exp(1);
+        end
     if(valueVelo < cfg.swarmV(i,7))
         % update best pos u
         cfg.swarmV(i,3) = cfg.swarmV (i,1);

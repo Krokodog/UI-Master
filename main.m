@@ -140,10 +140,10 @@ for i=1:iterations
             c=createVectorMap(cfgvMap,grid,vFieldx,vFieldy,vMap);
         end
         if(labindex==2)
-            c=velPSO(vcfg,grid,vFieldx,vFieldy,uT,vT,iter);
+            c=velPSO(vcfg,grid,vFieldx,vFieldy,uT,vT,iter,ofval);
         end
         if(labindex==3)
-            c=nPSO(cfg,grid,vFieldx,vFieldy,uT,vT,iter);
+            c=nPSO(cfg,grid,vFieldx,vFieldy,uT,vT,iter,ofval);
         end
     end
     cfgvMap=c{1};

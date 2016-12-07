@@ -1,4 +1,4 @@
-function [cfg] = nPSO(cfg,grid,vFieldx,vFieldy, uT, vT,iter)
+function [cfg] = nPSO(cfg,grid,vFieldx,vFieldy, uT, vT,iter,ofval)
 %NORMALPSO Particle swarm optimazation
 
 vMax=2;
@@ -24,8 +24,18 @@ for i= 1:cfg.swarmSize
     
     u = cfg.swarm(i,1);
     v = cfg.swarm(i,2);
-    % Objective function
-    value = (u-uT)^2 + ( v-vT)^2;
+       % Objective function
+    if(ofval==1)
+        value = (u-uT)^2 + ( v-vT)^2;
+    end
+    if(ofval==2)
+        %aRos=1;bRos=100;
+        value=1*(1-u)^2 + 100*(v-u^2)^2;
+    end
+    if(ofval==3)
+        %aAckley=20;bAckley=0.2;c=2*pi;
+        value=-20*exp(-0.2*sqrt(u^2+v^2))-exp(1/2*(cos(2*pi*u)+cos(2*pi*v)))+20*exp(1);
+    end
     if(value < cfg.swarm(i,7))
         %update best pos u
         cfg.swarm(i,3) = cfg.swarm (i,1);
