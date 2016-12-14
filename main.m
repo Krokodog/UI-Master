@@ -84,10 +84,15 @@ switch vecval
 end
 
 
-gBests=zeros(iterations,1);
-ngBests=zeros(iterations,1);
-cRate=zeros(iterations,1);
-ncRate=zeros(iterations,1);
+EgBests=zeros(iterations,1);
+VgBests=zeros(iterations,1);
+NgBests=zeros(iterations,1);
+
+EcRate=zeros(iterations,1);
+VcRate=zeros(iterations,1);
+NcRate=zeros(iterations,1);
+
+
 pArea=zeros(iterations,1);
 its=(1:iterations).';
 
@@ -118,8 +123,10 @@ cfg.swarm(:, 5)=0;
 % initial velocity v
 cfg.swarm(:, 6)=0;
 cfg.swarm(:, 7)=1000000;
-vcfg=cfg;
-vcfg.swarmV = cfg.swarm;
+Ecfg=cfg;
+Ncfg=cfg;
+Ecfg.swarmV = cfg.swarm;
+Ncfg.swarmN = cfg.swarm;
 %------------------------------------------------------------------
 
 %PARALLEL
@@ -140,16 +147,20 @@ for i=1:iterations
             c=createVectorMap(cfgvMap,grid,vFieldx,vFieldy,vMap);
         end
         if(labindex==2)
-            c=velPSO(vcfg,grid,vFieldx,vFieldy,uT,vT,iter,ofval);
+            c=velPSO(Ecfg,grid,vFieldx,vFieldy,uT,vT,iter,ofval);
         end
         if(labindex==3)
             c=nPSO(cfg,grid,vFieldx,vFieldy,uT,vT,iter,ofval);
         end
+        if(labindex==4)
+            c=PSO(Ncfg,grid,uT,vT,iter,ofval);
+        end
     end
     cfgvMap=c{1};
-    vcfg=c{2};
+    Ecfg=c{2};
     cfg=c{3};
-   
+    Ncfg=c{4};
+    
     %wqe=vcfg.swarmV
     cla(handles.axes1,'reset');
     cla(handles.axes5,'reset');
@@ -169,7 +180,7 @@ for i=1:iterations
     % vPSO visualization
     quiverPlot=quiver(x,y,vFieldx,vFieldy,'color',[1 0 1]);
     set(quiverPlot,'Parent', handles.axes1)
-    swarmVPlot=plot(vcfg.swarmV(:,1),vcfg.swarmV(:,2),'ro');
+    swarmVPlot=plot(Ecfg.swarmV(:,1),Ecfg.swarmV(:,2),'ko');
     set(swarmVPlot,'Parent', handles.axes1)
     colorbar(handles.axes1)
     set(handles.axes1, 'YDir', 'normal')
@@ -187,9 +198,16 @@ for i=1:iterations
     hold on
     quiverPlot=quiver(x,y,vFieldx,vFieldy,'color',[1 0 1]);
     set(quiverPlot,'Parent', handles.axes5)
+    
     swarmPlot=plot(cfg.swarm(:,1),cfg.swarm(:,2),'ro');
-    set(swarmPlot,'Parent', handles.axes5) 
-    colorbar(handles.axes5)
+    set(swarmPlot,'Parent', handles.axes5)
+    swarm2VPlot=plot(Ecfg.swarmV(:,1),Ecfg.swarmV(:,2),'ko');
+    set(swarm2VPlot,'Parent', handles.axes5)
+    
+    swarmNPlot=plot(Ncfg.swarmN(:,1),Ncfg.swarmN(:,2),'bo');
+    set(swarmNPlot,'Parent', handles.axes5)
+     
+    colorbar(handles.axes5,'visibility','off')
     set(handles.axes5, 'YDir', 'normal')
     xlabel(handles.axes5,'x-Values')
     ylabel(handles.axes5,'y-Values')   
@@ -204,13 +222,18 @@ for i=1:iterations
     %                 set(q2,'Parent', handles.axes2)
     
     % global best per iteration
-    gBests(i,1)=vcfg.gBestPerI;
-    ngBests(i,1)=cfg.ngBestPerI;
+    EgBests(i,1)=Ecfg.gBestPerI;
+    VgBests(i,1)=cfg.ngBestPerI;
+    NgBests(i,1)=Ncfg.ngBestPerI;
+    
     hold on
-    gBestPlot=plot(1:i,gBests(1:i),'b.');
-    ngBestPlot=plot(1:i,ngBests(1:i),'r.');
-    set(gBestPlot,'Parent', handles.axes4)
-    set(ngBestPlot,'Parent', handles.axes4)
+    EgBestPlot=plot(1:i,EgBests(1:i),'k.');
+    VgBestPlot=plot(1:i,VgBests(1:i),'r.');
+    NgBestPlot=plot(1:i,NgBests(1:i),'b.');
+    set(EgBestPlot,'Parent', handles.axes4)
+    set(VgBestPlot,'Parent', handles.axes4)
+    set(NgBestPlot,'Parent', handles.axes4)
+    legend({'EPSO','VPSO','PSO'})
     hold off
     xlabel(handles.axes4,'Iteration')
     ylabel(handles.axes4,'Best found solution')
@@ -218,28 +241,40 @@ for i=1:iterations
     %convergence rate
     sigmasq = 0;
     sigmasq2 = 0;
-    N=vcfg.swarmSize;
-    favg=sum(vcfg.swarmV(:,7))/N;
+    sigmasq3 = 0;
+    N=Ecfg.swarmSize;
+    favg=sum(Ecfg.swarmV(:,7))/N;
     N2=cfg.swarmSize;
     favg2=sum(cfg.swarm(:,7))/N2;
+    N3=Ncfg.swarmSize;
+    favg3=sum(Ncfg.swarmN(:,7))/N3;
     for iparticle= 1:N
-        fi = vcfg.swarmV(iparticle,7);
+        fi = Ecfg.swarmV(iparticle,7);
         fitness =max(1,max(abs(fi-favg)));
         sigmsq = sigmasq + ( (fi-favg)/fitness)^2;
         
         fi2 = cfg.swarm(iparticle,7);
         fitness2 =max(1,max(abs(fi2-favg2)));
         sigmsq2 = sigmasq2 + ( (fi2-favg2)/fitness2)^2;
+        
+        fi3 = Ncfg.swarmN(iparticle,7);
+        fitness3 =max(1,max(abs(fi3-favg3)));
+        sigmsq3 = sigmasq3 + ( (fi3-favg3)/fitness3)^2;
     end
     sigmsq=sigmsq/N;
     sigmsq2=sigmsq2/N2;
-    cRate(i)=sigmsq;
-    ncRate(i)=sigmsq2;
+    sigmsq3=sigmsq3/N3;
+    EcRate(i)=sigmsq;
+    VcRate(i)=sigmsq2;
+    NcRate(i)=sigmsq3;
     hold on
-    convergencePlot=plot(i,sigmsq,'b.');
-    nconvergencePlot=plot(i,sigmsq2,'r.');
-    set(convergencePlot,'Parent', handles.axes3)
-    set(nconvergencePlot,'Parent', handles.axes3)
+    EconvergencePlot=plot(i,sigmsq,'k.');
+    VconvergencePlot=plot(i,sigmsq2,'r.');
+    NconvergencePlot=plot(i,sigmsq3,'b.');
+    
+    set(EconvergencePlot,'Parent', handles.axes3)
+    set(VconvergencePlot,'Parent', handles.axes3)
+    set(NconvergencePlot,'Parent', handles.axes3)
     hold off
     
     xlabel(handles.axes3,'Iteration')
@@ -251,7 +286,7 @@ for i=1:iterations
     exploredPerc = exploredArea/areaSize*100 ;
     pArea(i)=exploredPerc;
     hold on
-    exploredPercPlot=plot(i,exploredPerc,'b.');
+    exploredPercPlot=plot(i,exploredPerc,'k.');
     set(exploredPercPlot,'Parent', handles.axes2)
     hold off
     xlabel(handles.axes2,'Iteration')
@@ -262,12 +297,14 @@ for i=1:iterations
     
 end
 hold on
-set(plot(1:iterations,ncRate(1:iterations),'r'),'Parent', handles.axes3)
-set(plot(1:iterations,cRate(1:iterations),'k'),'Parent', handles.axes3)
+set(plot(1:iterations,VcRate(1:iterations),'r'),'Parent', handles.axes3)
+set(plot(1:iterations,NcRate(1:iterations),'b'),'Parent', handles.axes3)
+set(plot(1:iterations,EcRate(1:iterations),'k'),'Parent', handles.axes3)
 set(plot(1:iterations,pArea(1:iterations),'k'),'Parent', handles.axes2)
 
-set(plot(1:iterations,gBests(1:iterations),'k'),'Parent', handles.axes4)
-set(plot(1:iterations,ngBests(1:iterations),'r'),'Parent', handles.axes4)
+set(plot(1:iterations,EgBests(1:iterations),'k'),'Parent', handles.axes4)
+set(plot(1:iterations,VgBests(1:iterations),'r'),'Parent', handles.axes4)
+set(plot(1:iterations,NgBests(1:iterations),'b'),'Parent', handles.axes4)
 hold off
 xlabel(handles.axes4,'Iteration')
 ylabel(handles.axes4,'Best found solution')
