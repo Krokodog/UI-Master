@@ -1,7 +1,6 @@
-function [cfg] = nPSO(cfg,grid,vFieldx,vFieldy, uT, vT,iter,ofval)
+function [cfg] = nPSO(cfg,grid,vFieldx,vFieldy, uT, vT,iter,ofval,vMax)
 %NORMALPSO Particle swarm optimazation
 
-vMax=2;
 for i= 1:cfg.swarmSize
     %x(t+1)=v(t+1)+x(t)
     % Boundary handling. Particles exceeding the boundaries will be

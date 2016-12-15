@@ -68,6 +68,10 @@ assignin('base','vecval',vecval)
 ofval=1;
 assignin('base','ofval',ofval)
 
+vMax=2;
+set(handles.vMax,'string','2');
+assignin('base','vMax',vMax)
+
 psoSwarmSize=20;
 set(handles.PSOSwarmsize,'string','20');
 assignin('base','psoSwarmSize',psoSwarmSize)
@@ -136,7 +140,7 @@ function epSwarmsize_Callback(hObject, eventdata, handles)
 
 % Hints: get(hObject,'String') returns contents of epSwarmsize as text
 %        str2double(get(hObject,'String')) returns contents of epSwarmsize as a double
-epSwarmSize =str2double(get(hObject,'String'))
+epSwarmSize =str2double(get(hObject,'String'));
 assignin('base','epSwarmSize',epSwarmSize)
 
 % --- Executes during object creation, after setting all properties.
@@ -319,7 +323,7 @@ function vfield_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of vfield
-
+%setappdata(0,'showvfield',get(hObject,'Value'));
 
 % --- Executes on button press in information.
 function information_Callback(hObject, eventdata, handles)
@@ -328,7 +332,7 @@ function information_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of information
-
+%setappdata(0,'showinformation',get(hObject,'Value'));
 
 % --- Executes on button press in contour.
 function contour_Callback(hObject, eventdata, handles)
@@ -337,7 +341,7 @@ function contour_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of contour
-
+%setappdata(0,'showvcontour',get(hObject,'Value'));
 
 
 function vMax_Callback(hObject, eventdata, handles)
@@ -347,7 +351,8 @@ function vMax_Callback(hObject, eventdata, handles)
 
 % Hints: get(hObject,'String') returns contents of vMax as text
 %        str2double(get(hObject,'String')) returns contents of vMax as a double
-
+vMax = str2double(get(hObject,'String'));
+assignin('base','vMax',vMax);
 
 % --- Executes during object creation, after setting all properties.
 function vMax_CreateFcn(hObject, eventdata, handles)

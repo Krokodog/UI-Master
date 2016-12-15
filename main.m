@@ -39,9 +39,12 @@ if(GUI==1)
     
     iterations  = evalin('base', 'psoIterations');
     vecval  = evalin('base', 'vecval');
-    
-    %TODO implement
     ofval  = evalin('base', 'ofval');
+    vMax  = evalin('base', 'vMax');
+    
+    showVF=get(handles.vfield,'Value');
+    showINF=get(handles.information,'Value');
+    showC=get(handles.contour,'Value');
 end
 
 %Grid
@@ -61,26 +64,62 @@ y=grid.yMin:grid.epsylon:grid.yMax;
 uT=-10;
 vT=13;
 
-% Sphere Function
-of=(x-uT).^2 + ( y-vT).^2;
+% Objective function
+if(ofval==1)
+    Z = (x-uT)^2 + ( y-vT)^2;
+end
+if(ofval==2)
+    %aRos=1;bRos=100;
+    Z=1*(1-x)^2 + 100*(y-x^2)^2;
+end
+if(ofval==3)
+    %aAckley=20;bAckley=0.2;c=2*pi;
+    Z=-20*exp(-0.2*sqrt(x^2+y^2))-exp(1/2*(cos(2*pi*x)+cos(2*pi*y)))+20*exp(1);
+end
 
 %Normalized vector fields
 switch vecval
     case 1
+        %max vlength sqrt(2)
         vFieldx=y/max(abs(y(:)));
         vFieldy=x/max(abs(x(:)));
     case 2
+        %max vlength sqrt(2)
         vFieldx=-y/max(abs(y(:)));
         vFieldy=x/max(abs(x(:)));
     case 3
+        %max vlength sqrt(2)
         vFieldx=(x+y)/(max(abs(x(:)))+max(abs(y(:))));
         vFieldy=y/max(abs(y(:)));
     case 4
+        %max vlength sqrt(2)
         vFieldx=-sin(y);
         vFieldy=cos(x*(y-x));
     case 5
+        %max vlength sqrt(2)
         vFieldx=(-x-y)/(max(abs(x(:)))+max(abs(y(:))));
         vFieldy=x/max(abs(x(:)));
+    case 6
+        if(ofval==1)
+            fx=2*(x-uT);
+            fy=2*(y-vT);
+            vFieldx = (fx)/(max(abs(fx(:))));
+            vFieldy = (fy)/(max(abs(fy(:))));
+        end
+        if(ofval==2)
+            %aRos=1;bRos=100;
+           fx=2*x - 400*x*(- x^2 + y) - 2;
+           fy=-200*x^2 + 200*y;           
+           vFieldx = (fx)/(max(abs(fx(:))));
+           vFieldy = (fy)/(max(abs(fy(:))));            
+        end
+        if(ofval==3)
+            %aAckley=20;bAckley=0.2;c=2*pi;
+           fx =(4*x*exp(-(x^2 + y^2)^(1/2)/5))/(x^2 + y^2)^(1/2) + pi*exp(cos(2*pi*x)/2 + cos(2*pi*y)/2)*sin(2*pi*x);
+           fy =(4*y*exp(-(x^2 + y^2)^(1/2)/5))/(x^2 + y^2)^(1/2) + pi*exp(cos(2*pi*x)/2 + cos(2*pi*y)/2)*sin(2*pi*y);
+           vFieldx = (fx)/(max(abs(fx(:))));
+           vFieldy = (fy)/(max(abs(fy(:))));
+        end
 end
 
 
@@ -94,6 +133,7 @@ NcRate=zeros(iterations,1);
 
 
 pArea=zeros(iterations,1);
+pAwareness=zeros(iterations,1);
 its=(1:iterations).';
 
 %-----------------Settings Explorer--------------------------------
@@ -136,9 +176,13 @@ c = Composite();
 
 for i=1:iterations
     FLAG = getappdata(0,'FLAG');
+    pause(0.01)
     while FLAG
         drawnow;
         FLAG = getappdata(0,'FLAG');
+        showVF=get(handles.vfield,'Value');
+        showINF=get(handles.information,'Value');
+        showC=get(handles.contour,'Value');
     end
     spmd
         labBarrier
@@ -147,13 +191,13 @@ for i=1:iterations
             c=createVectorMap(cfgvMap,grid,vFieldx,vFieldy,vMap);
         end
         if(labindex==2)
-            c=velPSO(Ecfg,grid,vFieldx,vFieldy,uT,vT,iter,ofval);
+            c=velPSO(Ecfg,grid,vFieldx,vFieldy,uT,vT,iter,ofval,vMax);
         end
         if(labindex==3)
-            c=nPSO(cfg,grid,vFieldx,vFieldy,uT,vT,iter,ofval);
+            c=nPSO(cfg,grid,vFieldx,vFieldy,uT,vT,iter,ofval,vMax);
         end
         if(labindex==4)
-            c=PSO(Ncfg,grid,uT,vT,iter,ofval);
+            c=PSO(Ncfg,grid,uT,vT,iter,ofval,vMax);
         end
     end
     cfgvMap=c{1};
@@ -164,23 +208,34 @@ for i=1:iterations
     %wqe=vcfg.swarmV
     cla(handles.axes1,'reset');
     cla(handles.axes5,'reset');
-   
+    
     
     a=cfgvMap.vMapx(:,:,1);
     b=cfgvMap.vMapy(:,:,1);
     a=a.^2;
     b=b.^2;
     addxy=(a+b)/2;
+    if(showINF)
     myColorMap = jet;
     myColorMap(1, :) = [1 1 1];
     caxis([0 1])
     colormap(myColorMap)
     imagesc([grid.xMin grid.xMax], [grid.yMin grid.yMax], addxy,'Parent',handles.axes1)
+    end
     hold on
     % vPSO visualization
+    %if(showC)
+   % contour(x,y,Z,'Parent',handles.axes1)
+    %set(contourPlot, handles.axes1)
+  %  end
+    if(showVF)
     quiverPlot=quiver(x,y,vFieldx,vFieldy,'color',[1 0 1]);
+    set(handles.axes1,'XLim',[grid.xMin grid.xMax],'YLim',[grid.yMin grid.yMax])
     set(quiverPlot,'Parent', handles.axes1)
+    end
+    
     swarmVPlot=plot(Ecfg.swarmV(:,1),Ecfg.swarmV(:,2),'ko');
+    set(handles.axes1,'XLim',[grid.xMin grid.xMax],'YLim',[grid.yMin grid.yMax])
     set(swarmVPlot,'Parent', handles.axes1)
     colorbar(handles.axes1)
     set(handles.axes1, 'YDir', 'normal')
@@ -211,15 +266,6 @@ for i=1:iterations
     set(handles.axes5, 'YDir', 'normal')
     xlabel(handles.axes5,'x-Values')
     ylabel(handles.axes5,'y-Values')   
-    
-    
-    %                 % movement of the explorer swarm
-    %                 p2=plot(cfgvMap.searchSwarm(:,1),cfgvMap.searchSwarm(:,2),'ro');
-    %                 set(p2,'Parent', handles.axes2)
-    %                 p3=plot(cfgvMap.searchSwarm(:,3),cfgvMap.searchSwarm(:,4),'gx');
-    %                 set(p3,'Parent', handles.axes2)
-    %                 q2=quiver(x,y,vFieldx,vFieldy);
-    %                 set(q2,'Parent', handles.axes2)
     
     % global best per iteration
     EgBests(i,1)=Ecfg.gBestPerI;
@@ -285,12 +331,17 @@ for i=1:iterations
     exploredArea =nnz(addxy);
     exploredPerc = exploredArea/areaSize*100 ;
     pArea(i)=exploredPerc;
+    pAwareness(i)=Ecfg.awareness*100;
+    
     hold on
-    exploredPercPlot=plot(i,exploredPerc,'k.');
+    exploredPercPlot=plot(i,exploredPerc,'g.');
+    awarenessPlot=plot(i,Ecfg.awareness*100,'m.');
     set(exploredPercPlot,'Parent', handles.axes2)
+    set(awarenessPlot,'Parent', handles.axes2)
+    legend(handles.axes2,{'Area','Aware'})
     hold off
     xlabel(handles.axes2,'Iteration')
-    ylabel(handles.axes2,{'Explored area','(in %)'})
+    ylabel(handles.axes2,{'Explored area/Awareness','(in %)'})
     
     %%swarmdbug=cfg.swarmV
     pause(0.1);
@@ -300,7 +351,8 @@ hold on
 set(plot(1:iterations,VcRate(1:iterations),'r'),'Parent', handles.axes3)
 set(plot(1:iterations,NcRate(1:iterations),'b'),'Parent', handles.axes3)
 set(plot(1:iterations,EcRate(1:iterations),'k'),'Parent', handles.axes3)
-set(plot(1:iterations,pArea(1:iterations),'k'),'Parent', handles.axes2)
+set(plot(1:iterations,pArea(1:iterations),'g'),'Parent', handles.axes2)
+set(plot(1:iterations,pAwareness(1:iterations),'m'),'Parent', handles.axes2)
 
 set(plot(1:iterations,EgBests(1:iterations),'k'),'Parent', handles.axes4)
 set(plot(1:iterations,VgBests(1:iterations),'r'),'Parent', handles.axes4)
